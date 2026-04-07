@@ -107,60 +107,51 @@ static void dfs_man(dfs_ctx_t *ctx, int cur_sq) {
 }
 
 // ================================================================
-// King DFS — flying king, all 4 diagonals
+// King DFS — Italian short king: captures 1 square in any direction
+// (NOT a flying king — that is International draughts, not Italian)
 // ================================================================
 static const int KING_DR[4] = {+1, +1, -1, -1};
 static const int KING_DF[4] = {+1, -1, +1, -1};
 
 static void dfs_king(dfs_ctx_t *ctx, int cur_sq) {
+    int r = cur_sq >> 3, f = cur_sq & 7;
+
+    // Effective occupancy: remove original from_sq and already-captured pieces
     uint64_t eff_occ = ctx->b->occ_all & ~ctx->captured_mask & ~(1ULL << ctx->from_sq);
     uint64_t eff_opp = ctx->b->occ[ctx->opp] & ~ctx->captured_mask;
 
     int found = 0;
 
+    // Try all 4 diagonal directions — exactly 1 square jump (like men, but all directions)
     for (int d = 0; d < 4; d++) {
-        int dr = KING_DR[d], df = KING_DF[d];
-        int r  = cur_sq >> 3, fc = cur_sq & 7;
+        int mr = r + KING_DR[d], mf = f + KING_DF[d];      // adjacent square (piece to jump)
+        int lr = r + 2*KING_DR[d], lf = f + 2*KING_DF[d];  // landing square
 
-        // Scan diagonal to find first occupied square
-        int opp_sq = -1;
-        int sr = r + dr, sf = fc + df;
-        while (sr >= 0 && sr <= 7 && sf >= 0 && sf <= 7) {
-            int sq = sr * 8 + sf;
-            if (eff_occ & (1ULL << sq)) {
-                if (eff_opp & (1ULL << sq)) opp_sq = sq;
-                // else own piece: direction blocked
-                break;
-            }
-            sr += dr; sf += df;
+        if (mr < 0 || mr > 7 || mf < 0 || mf > 7) continue;
+        if (lr < 0 || lr > 7 || lf < 0 || lf > 7) continue;
+
+        int mid_sq  = mr * 8 + mf;
+        int land_sq = lr * 8 + lf;
+
+        if (!(eff_opp & (1ULL << mid_sq))) continue;  // no capturable piece
+        if (  eff_occ & (1ULL << land_sq)) continue;  // landing occupied
+
+        int was_king = (ctx->b->bb[ctx->opp][DAMA_KING] & (1ULL << mid_sq)) ? 1 : 0;
+        ctx->caps[ctx->seq_len] = mid_sq;
+        ctx->captured_mask |= (1ULL << mid_sq);
+        ctx->nkings  += was_king;
+        ctx->seq_len++;
+        found = 1;
+
+        if (ctx->seq_len >= DAMA_MAX_CAPS) {
+            emit_terminal(ctx, land_sq, 0);
+        } else {
+            dfs_king(ctx, land_sq);
         }
-        if (opp_sq < 0) continue;  // no capturable piece in this direction
 
-        // Try every empty landing square beyond opp_sq
-        int was_king = (ctx->b->bb[ctx->opp][DAMA_KING] & (1ULL << opp_sq)) ? 1 : 0;
-        int lr = (opp_sq >> 3) + dr, lf = (opp_sq & 7) + df;
-        while (lr >= 0 && lr <= 7 && lf >= 0 && lf <= 7) {
-            int land_sq = lr * 8 + lf;
-            if (eff_occ & (1ULL << land_sq)) break;  // blocked
-
-            ctx->caps[ctx->seq_len] = opp_sq;
-            ctx->captured_mask |= (1ULL << opp_sq);
-            ctx->nkings  += was_king;
-            ctx->seq_len++;
-            found = 1;
-
-            if (ctx->seq_len >= DAMA_MAX_CAPS) {
-                emit_terminal(ctx, land_sq, 0);
-            } else {
-                dfs_king(ctx, land_sq);
-            }
-
-            ctx->seq_len--;
-            ctx->nkings  -= was_king;
-            ctx->captured_mask &= ~(1ULL << opp_sq);
-
-            lr += dr; lf += df;
-        }
+        ctx->seq_len--;
+        ctx->nkings  -= was_king;
+        ctx->captured_mask &= ~(1ULL << mid_sq);
     }
 
     if (!found && ctx->seq_len > 0)
@@ -168,15 +159,18 @@ static void dfs_king(dfs_ctx_t *ctx, int cur_sq) {
 }
 
 // ================================================================
-// Italian rules filter
+// Italian rules filter (presa maggiore)
 // Filters buf[0..n) in-place; returns new count.
-// Priority: (1) max captures, (2) king attacker, (3) max kings cap.
+// Priority (dama italiana):
+//   1. Maximum number of pieces captured
+//   2. Maximum number of KINGS (dame) captured
+//   3. King (dama) attacker preferred over man attacker
 // ================================================================
 static int filter_captures(game_move_t *buf, int n) {
     if (n == 0) return 0;
     int i, out;
 
-    // 1. Maximum number of captures
+    // 1. Maximum number of pieces captured
     int max_caps = 0;
     for (i = 0; i < n; i++) {
         int nc = (int)((buf[i] >> 12) & 15);
@@ -187,7 +181,18 @@ static int filter_captures(game_move_t *buf, int n) {
         if ((int)((buf[i] >> 12) & 15) == max_caps) buf[out++] = buf[i];
     n = out;
 
-    // 2. King attacker preference
+    // 2. Maximum number of kings (dame) captured
+    int max_kings = 0;
+    for (i = 0; i < n; i++) {
+        int nk = (int)((buf[i] >> 18) & 15);
+        if (nk > max_kings) max_kings = nk;
+    }
+    out = 0;
+    for (i = 0; i < n; i++)
+        if ((int)((buf[i] >> 18) & 15) == max_kings) buf[out++] = buf[i];
+    n = out;
+
+    // 3. King (dama) attacker preferred
     int has_king = 0;
     for (i = 0; i < n; i++)
         if ((buf[i] >> 17) & 1) { has_king = 1; break; }
@@ -198,16 +203,7 @@ static int filter_captures(game_move_t *buf, int n) {
         n = out;
     }
 
-    // 3. Maximum kings captured
-    int max_kings = 0;
-    for (i = 0; i < n; i++) {
-        int nk = (int)((buf[i] >> 18) & 15);
-        if (nk > max_kings) max_kings = nk;
-    }
-    out = 0;
-    for (i = 0; i < n; i++)
-        if ((int)((buf[i] >> 18) & 15) == max_kings) buf[out++] = buf[i];
-    return out;
+    return n;
 }
 
 // ================================================================
@@ -276,22 +272,19 @@ static int gen_simple(const dama_board_t *b, game_move_t *out, int cap) {
         }
     }
 
-    // Kings: any distance diagonally
+    // Kings: one square diagonally in all 4 directions (Italian short king)
     {
         uint64_t kings = b->bb[stm][DAMA_KING];
         while (kings && n < cap) {
             int sq = bo_extract_lsb_index(&kings);
+            int r = sq >> 3, f = sq & 7;
             for (int d = 0; d < 4; d++) {
-                int dr = KING_DR[d], df = KING_DF[d];
-                int cr = sq >> 3, cf = sq & 7;
-                cr += dr; cf += df;
-                while (cr >= 0 && cr <= 7 && cf >= 0 && cf <= 7) {
-                    int to = cr * 8 + cf;
-                    if (b->occ_all & (1ULL << to)) break;
-                    if (n < cap)
-                        out[n++] = dama_move_quiet(sq, to, 0, 1);
-                    cr += dr; cf += df;
-                }
+                int nr = r + KING_DR[d], nf = f + KING_DF[d];
+                if (nr < 0 || nr > 7 || nf < 0 || nf > 7) continue;
+                int to = nr * 8 + nf;
+                if (b->occ_all & (1ULL << to)) continue;
+                if (n < cap)
+                    out[n++] = dama_move_quiet(sq, to, 0, 1);
             }
         }
     }
