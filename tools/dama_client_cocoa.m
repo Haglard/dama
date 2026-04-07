@@ -308,7 +308,7 @@ typedef struct {
     for (int r = 0; r < 8; r++) {
         for (int f = 0; f < 8; f++) {
             NSRect sqr = NSMakeRect(BOARD_X + f*SQ_SIZE, BOARD_Y + r*SQ_SIZE, SQ_SIZE, SQ_SIZE);
-            BOOL isDark = ((r + f) & 1) != 0;
+            BOOL isDark = ((r + f) & 1) == 0;
             [(isDark ? darkSq : lightSq) setFill];
             NSRectFill(sqr);
 
@@ -632,14 +632,17 @@ typedef struct {
 }
 
 - (void)recordCapture:(game_move_t)mv moverSide:(int)side {
-    if (!dama_move_is_cap(mv)) return;
+    int nc = dama_move_num_caps(mv);
+    if (nc == 0) return;
     int victim = side ^ 1;
-    int capsq   = dama_move_cap_sq(mv);
     const dama_board_t *b = dama_state_as_board(_st);
-    char g = (b->bb[victim][DAMA_KING] & (1ULL << capsq)) ? 'D' : 'P';
-    if (victim == DAMA_BLACK) g = (char)tolower((unsigned char)g);
-    if (victim == DAMA_WHITE && _nW < 31) { _capsW[_nW++] = g; _capsW[_nW] = '\0'; }
-    else if (victim == DAMA_BLACK && _nB < 31) { _capsB[_nB++] = g; _capsB[_nB] = '\0'; }
+    for (int i = 0; i < nc; i++) {
+        int capsq = dama_move_cap_sq(mv, i);
+        char g = (b->bb[victim][DAMA_KING] & (1ULL << capsq)) ? 'D' : 'P';
+        if (victim == DAMA_BLACK) g = (char)tolower((unsigned char)g);
+        if (victim == DAMA_WHITE && _nW < 31) { _capsW[_nW++] = g; _capsW[_nW] = '\0'; }
+        else if (victim == DAMA_BLACK && _nB < 31) { _capsB[_nB++] = g; _capsB[_nB] = '\0'; }
+    }
 }
 
 - (void)undoLastMove {
@@ -757,7 +760,7 @@ typedef struct {
         for (int f = 0; f < 8; f++) {
             int drawRank = r; // rank 0 at bottom
             NSRect sqr = NSMakeRect(bx + f*SQ, by + drawRank*SQ, SQ, SQ);
-            BOOL isDark = ((r + f) & 1) != 0;
+            BOOL isDark = ((r + f) & 1) == 0;
             [(isDark ? sqDark : sqLight) setFill]; NSRectFill(sqr);
 
             if (!isDark) continue;
