@@ -73,12 +73,38 @@ target_link_libraries(selfplay_cli PRIVATE game_dama checkers engine core)
 # --- Native macOS GUI client (Cocoa) ---
 if(APPLE)
     enable_language(OBJC)
-    add_executable(dama_client tools/dama_client_cocoa.m)
+
+    # Build as a proper .app bundle
+    add_executable(dama_client MACOSX_BUNDLE tools/dama_client_cocoa.m)
     target_include_directories(dama_client PRIVATE include)
     target_compile_options(dama_client PRIVATE -fobjc-arc)
     target_link_libraries(dama_client PRIVATE
         game_dama checkers engine core
         "-framework AppKit" "-framework Foundation")
+
+    set_target_properties(dama_client PROPERTIES
+        MACOSX_BUNDLE_BUNDLE_NAME          "Vibe Dama"
+        MACOSX_BUNDLE_GUI_IDENTIFIER       "com.haglard.vibedama"
+        MACOSX_BUNDLE_BUNDLE_VERSION       "1.0.0"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+        MACOSX_BUNDLE_COPYRIGHT            "© 2026 Haglard"
+        OUTPUT_NAME                        "Vibe Dama"
+    )
+
+    # Custom target: create VibeDama-1.0.dmg from the .app bundle
+    add_custom_target(dmg
+        DEPENDS dama_client
+        COMMAND ${CMAKE_COMMAND} -E remove -f
+                "${CMAKE_BINARY_DIR}/VibeDama-1.0.dmg"
+        COMMAND hdiutil create
+                -volname   "Vibe Dama 1.0"
+                -srcfolder "${CMAKE_BINARY_DIR}/Vibe Dama.app"
+                -ov
+                -format    UDZO
+                "${CMAKE_BINARY_DIR}/VibeDama-1.0.dmg"
+        COMMENT "Creating VibeDama-1.0.dmg …"
+        VERBATIM
+    )
 endif()
 
 # ================================================================
