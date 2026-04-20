@@ -3,20 +3,20 @@
 Motore per la **dama italiana** scritto in **C11** con client grafico nativo **macOS (Cocoa/AppKit)**.
 
 Autori: **Sandro Borioni**, **ChatGPT**, **Claude**
-Versione: **1.0** M-bM-^@M-^T Licenza: **MIT**
+Versione: **1.0** -- Licenza: **MIT**
 
-> *between 2022 and 2026 M-BM-7 with a swift acceleration in March 2026*
+> *between 2022 and 2026 - with a swift acceleration in March 2026*
 > *not a single line of code is crafted by a human*
 
 ---
 
 ## Descrizione
 
-Il progetto M-CM-( organizzato in tre layer:
+Il progetto e' organizzato in tre layer:
 
-- **[engine-core](https://github.com/Haglard/engine-core)** *(submodule in `extern/engine-core`)* M-bM-^@M-^T motore di ricerca negamax generico, transposition table, utility di sistema. Condiviso con chess-engine, forza4 e tris.
-- **checkers** M-bM-^@M-^T regole della dama italiana: cattura obbligatoria, massimo numero di catture, dame volanti, promozione.
-- **game_dama** M-bM-^@M-^T adapter `GameAPI` che connette le regole al motore di ricerca.
+- **[engine-core](https://github.com/Haglard/engine-core)** *(submodule in `extern/engine-core`)* -- motore di ricerca negamax generico, transposition table, utility di sistema. Condiviso con chess-engine, forza4 e tris.
+- **checkers** -- regole della dama italiana: cattura obbligatoria, massimo numero di catture, dame volanti, promozione.
+- **game_dama** -- adapter `GameAPI` che connette le regole al motore di ricerca.
 
 Il motore di ricerca non contiene una sola riga specifica per la dama.
 
@@ -86,13 +86,13 @@ cmake --build build --target dama_client
 ./build/dama_client
 ```
 
-FunzionalitM-CM- :
+Funzionalita':
 - Splash screen con scacchiera decorativa
-- Dialogo configurazione: modalitM-CM-  HvC / CvC, colore, difficoltM-CM- 
+- Dialogo configurazione: modalita' HvC / CvC, colore, difficolta'
 - Handicap computer (rimuove N pezzi casuali, re sempre preservato)
 - Posizione personalizzata (formato `W:Wa1,c1,...:Bb6,d6,...`)
-- Pannello laterale: turno, barra di valutazione, profonditM-CM- /nps/TT, ultime mosse
-- Tasti: `M-bM-^LM-^XN` nuova partita, `M-bM-^LM-^XZ` annulla mossa, `Esc` deseleziona
+- Pannello laterale: turno, barra di valutazione, profondita'/nps/TT, ultime mosse
+- Tasti: `Cmd+N` nuova partita, `Cmd+Z` annulla mossa, `Esc` deseleziona
 
 ---
 
@@ -101,12 +101,12 @@ FunzionalitM-CM- :
 | Regola | Note |
 |---|---|
 | Cattura obbligatoria | Se esiste almeno una cattura, deve essere effettuata |
-| Massimo numero di catture | Tra piM-CM-9 sequenze, obbligatoria quella che cattura piM-CM-9 pezzi |
-| Preferenza dama su pedina | A paritM-CM-  di numero, si preferisce catturare una dama |
+| Massimo numero di catture | Tra piu' sequenze, obbligatoria quella che cattura piu' pezzi |
+| Preferenza dama su pedina | A parita' di numero, si preferisce catturare una dama |
 | Dama volante | Si muove e cattura diagonalmente su qualsiasi distanza |
 | Promozione | La pedina raggiunge l'ultima traversa e diventa dama |
-| Patta per 40 mosse | 40 mosse senza catture M-bM-^FM-^R patta |
-| Tripla ripetizione | Stessa posizione 3 volte M-bM-^FM-^R patta |
+| Patta per 40 mosse | 40 mosse senza catture -> patta |
+| Tripla ripetizione | Stessa posizione 3 volte -> patta |
 
 ---
 
@@ -133,18 +133,18 @@ build/                out-of-source (non tracciato)
 ## Architettura
 
 ```
-M-bM-^TM-^LM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^P
-M-bM-^TM-^B    dama_client      M-bM-^TM-^B  client macOS
-M-bM-^TM-^B    search_cli       M-bM-^TM-^B  strumenti CLI
-M-bM-^TM-^TM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-,M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^X
-         M-bM-^TM-^B
-M-bM-^TM-^LM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^VM-<M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^P
-M-bM-^TM-^B     game_dama       M-bM-^TM-^B  GameAPI adapter
-M-bM-^TM-^TM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-,M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^X
-         M-bM-^TM-^B
-M-bM-^TM-^LM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^VM-<M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^P  M-bM-^TM-^LM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^P
-M-bM-^TM-^B    checkers     M-bM-^TM-^B  M-bM-^TM-^B  engine_core  M-bM-^TM-^B  submodule
-M-bM-^TM-^B (regole dama)   M-bM-^TM-^B  M-bM-^TM-^B  (negamax +   M-bM-^TM-^B
-M-bM-^TM-^B                 M-bM-^TM-^B  M-bM-^TM-^B   utility)    M-bM-^TM-^B
-M-bM-^TM-^TM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^X  M-bM-^TM-^TM-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^@M-bM-^TM-^X
+  +------------------+
+  |   dama_client    |   client macOS
+  |   search_cli     |   strumenti CLI
+  +--------+---------+
+           |
+  +--------+---------+
+  |    game_dama     |   GameAPI adapter
+  +--------+---------+
+           |
+  +--------+--------+    +---------------+
+  |    checkers     |    |  engine_core  |  submodule
+  |  (regole dama)  |    |  (negamax +   |
+  |                 |    |   utility)    |
+  +-----------------+    +---------------+
 ```
